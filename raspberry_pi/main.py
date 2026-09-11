@@ -9,6 +9,7 @@ from mock_ai import get_mock_hazard
 from protocol import encode_hazard
 from ble_sender import BLESender
 from latency import now_ms, calc_latency_ms
+from logger import save_log
 
 sender = BLESender(
     device_name="SenseOn_ESP32",
@@ -36,6 +37,9 @@ def main():
     print("전송 패킷:", packet)
     print(f"AI 결과 → BLE 송신 준비 지연시간: {latency:.3f} ms")
 
+    # CSV 파일에 결과 저장
+    save_log(hazard, ble_latency_ms=latency)
+    print("로그 저장 완료")
 
 if __name__ == "__main__":
     main()
