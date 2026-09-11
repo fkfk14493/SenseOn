@@ -1,5 +1,10 @@
 import asyncio
 from bleak import BleakClient, BleakScanner
+from datetime import datetime
+
+def log(message):
+    now = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+    print(f"[{now}] {message}")
 
 
 class BLESender:
@@ -29,7 +34,7 @@ class BLESender:
     async def find_device(self):
         # 주변 BLE 장치 중에서
         # ESP32 이름과 같은 장치를 검색
-        print(f"[BLE] {self.device_name} 검색 중...")
+        log(f"[BLE] {self.device_name} 검색 중...")
 
         # 주변 BLE 장치 검색
         devices = await BleakScanner.discover()
@@ -37,13 +42,13 @@ class BLESender:
         # 검색된 장치들을 하나씩 확인
         for device in devices:
             if device.name == self.device_name:
-                print(f"[BLE] 장치 발견: {device.name}")
+                log(f"[BLE] 장치 발견: {device.name}")
 
                 # 찾은 ESP32 장치 정보 반환
                 return device
 
         # ESP32를 찾지 못한 경우
-        print("[BLE] 장치를 찾지 못했습니다.")
+        log("[BLE] 장치를 찾지 못했습니다.")
         return None
 
 
@@ -62,12 +67,12 @@ class BLESender:
             # 실제 BLE 연결 시도
             await self.client.connect()
 
-            print("[BLE] 연결 성공")
+            log("[BLE] 연결 성공")
             return True
 
         except Exception as e:
             # 연결 중 오류 발생
-            print(f"[BLE] 연결 실패: {e}")
+            log(f"[BLE] 연결 실패: {e}")
             return False
 
     async def connect_with_retry(self, retry_delay=3):
@@ -85,7 +90,7 @@ class BLESender:
             if connected:
                 return True
 
-            print(f"[BLE] {retry_delay}초 후 다시 연결합니다.")
+            log(f"[BLE] {retry_delay}초 후 다시 연결합니다.")
             await asyncio.sleep(retry_delay)
 
     async def send(self, packet):
@@ -94,14 +99,14 @@ class BLESender:
         # ==========================================
 
         if self.client is None or not self.client.is_connected:
-            print("[BLE] 연결이 끊어졌습니다. 재연결을 시도합니다.")
+            log("[BLE] 연결이 끊어졌습니다. 재연결을 시도합니다.")
 
             # 자동 재연결
             await self.connect_with_retry()
 
         # ESP32와 연결되어 있는지 확인
         if self.client is None or not self.client.is_connected:
-            print("[BLE] 연결되어 있지 않습니다.")
+            log("[BLE] 연결되어 있지 않습니다.")
             return False
 
         try:
@@ -123,11 +128,11 @@ class BLESender:
                 packet.encode("utf-8")
             )
 
-            print(f"[BLE] 전송: {packet}")
+            log(f"[BLE] 전송: {packet}")
             return True
 
         except Exception as e:
-            print(f"[BLE] 전송 실패: {e}")
+            log(f"[BLE] 전송 실패: {e}")
             return False
 
 
@@ -136,4 +141,4 @@ class BLESender:
         if self.client is not None and self.client.is_connected:
             await self.client.disconnect()
 
-            print("[BLE] 연결 종료")
+            log("[BLE] 연결 종료")
