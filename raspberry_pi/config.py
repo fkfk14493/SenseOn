@@ -1,0 +1,7 @@
+DEVICE_NAME = "SenseOn_ESP32"
+
+# ESP32 담당자가 나중에 알려줄 값
+SERVICE_UUID = ""
+CHARACTERISTIC_UUID = ""
+
+RETRY_DELAY = 3

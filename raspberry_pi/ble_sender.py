@@ -1,6 +1,8 @@
 import asyncio
 from bleak import BleakClient, BleakScanner
 from datetime import datetime
+from config import DEVICE_NAME, CHARACTERISTIC_UUID, RETRY_DELAY
+
 
 def log(message):
     now = datetime.now().strftime("%H:%M:%S.%f")[:-3]
@@ -8,23 +10,10 @@ def log(message):
 
 
 class BLESender:
-    def __init__(self, device_name, characteristic_uuid):
-        # =========================================
-        # ESP32 BLE 정보
-        # =========================================
-        # device_name:
-        #   ESP32에서 설정한 BLE 장치 이름
-        #   예: "SenseOn_ESP32"
-        #
-        # characteristic_uuid:
-        #   ESP32에서 데이터를 수신하도록 만든
-        #   BLE Characteristic의 UUID
-        #
-        # ※ 실제 ESP32 코드가 완성되면
-        #   ESP32 담당자에게 이 두 값을 받아서 넣으면 됨.
-        # =========================================
-        self.device_name = device_name
-        self.characteristic_uuid = characteristic_uuid
+    def __init__(self):
+        # ESP 정보 불러오기
+        self.device_name = DEVICE_NAME
+        self.characteristic_uuid = CHARACTERISTIC_UUID
 
         # ESP32와 연결된 BLE Client 객체를 저장
         # 아직 연결 전이므로 None
@@ -41,7 +30,7 @@ class BLESender:
 
         # 검색된 장치들을 하나씩 확인
         for device in devices:
-            if device.name == self.device_name:
+            if device.name == DEVICE_NAME:
                 log(f"[BLE] 장치 발견: {device.name}")
 
                 # 찾은 ESP32 장치 정보 반환
@@ -75,7 +64,7 @@ class BLESender:
             log(f"[BLE] 연결 실패: {e}")
             return False
 
-    async def connect_with_retry(self, retry_delay=3):
+    async def connect_with_retry(self):
         # ==========================================
         # 재연결 로직
         #
@@ -85,50 +74,31 @@ class BLESender:
         # ==========================================
 
         while True:
-            connected = await self.connect()
+            if await self.connect():
+                return
 
-            if connected:
-                return True
-
-            log(f"[BLE] {retry_delay}초 후 다시 연결합니다.")
-            await asyncio.sleep(retry_delay)
+            log(f"[BLE] {RETRY_DELAY}초 후 재연결")
+            await asyncio.sleep(RETRY_DELAY)
 
     async def send(self, packet):
         # ==========================================
         # 데이터 전송 전에 BLE 연결 상태 확인
         # ==========================================
+        
+        if not CHARACTERISTIC_UUID:
+            raise ValueError("CHARACTERISTIC_UUID가 아직 설정되지 않았습니다.")
 
         if self.client is None or not self.client.is_connected:
-            log("[BLE] 연결이 끊어졌습니다. 재연결을 시도합니다.")
-
-            # 자동 재연결
+            log("[BLE] 연결 없음. 재연결 시도")
             await self.connect_with_retry()
 
-        # ESP32와 연결되어 있는지 확인
-        if self.client is None or not self.client.is_connected:
-            log("[BLE] 연결되어 있지 않습니다.")
-            return False
-
         try:
-            # =========================================
-            # ESP32로 실제 데이터를 보내는 부분
-            # =========================================
-            #
-            # self.characteristic_uuid:
-            #   ESP32의 수신용 Characteristic UUID
-            #
-            # packet:
-            #   예: "car,LEFT,DANGER,1.8"
-            #
-            # encode("utf-8"):
-            #   문자열을 BLE로 보낼 수 있도록 bytes로 변환
-            # =========================================
             await self.client.write_gatt_char(
-                self.characteristic_uuid,
+                CHARACTERISTIC_UUID,
                 packet.encode("utf-8")
             )
 
-            log(f"[BLE] 전송: {packet}")
+            log(f"[BLE] 전송 성공: {packet}")
             return True
 
         except Exception as e:
