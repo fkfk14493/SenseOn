@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "senseon_log.csv")
 
 
-def save_log(hazard, ble_latency_ms=None):
+def save_log(hazard, e2e_latency_ms=None):
     # 파일이 처음 만들어지는지 확인
     file_exists = os.path.exists(LOG_FILE)
 
@@ -22,7 +22,7 @@ def save_log(hazard, ble_latency_ms=None):
                 "direction",
                 "risk",
                 "ttc",
-                "ble_latency_ms"
+                "e2e_latency_ms"
             ])
 
         # 실제 데이터 저장
@@ -32,5 +32,5 @@ def save_log(hazard, ble_latency_ms=None):
             hazard["direction"],
             hazard["risk"],
             hazard["ttc"],
-            ble_latency_ms
+            e2e_latency_ms
         ])

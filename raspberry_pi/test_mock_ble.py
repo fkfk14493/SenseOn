@@ -14,9 +14,28 @@ async def main():
     print("Mock AI:", hazard)
     print("Packet:", packet)
 
-    await sender.connect_with_retry()
-    await sender.send(packet)
-    await sender.disconnect()
+    try:
+        await sender.connect_with_retry()
+
+        sender.clear_ack()
+
+        send_success = await sender.send(packet)
+
+        if not send_success:
+            print("BLE 전송 실패")
+            return
+
+        print("BLE 전송 성공")
+
+        ack_received = await sender.wait_for_ack()
+
+        if ack_received:
+            print("ACK 수신 성공")
+        else:
+            print("ACK 수신 실패")
+
+    finally:
+        await sender.disconnect()
 
 
 if __name__ == "__main__":
