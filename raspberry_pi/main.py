@@ -4,6 +4,7 @@
 # 4. 통신 안정성 처리
 # 5. End-to-End Latency 측정
 # 6. 최종 통합 실행
+# 통합 후 camera.py 호출
 
 import asyncio
 
