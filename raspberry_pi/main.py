@@ -28,6 +28,21 @@ async def main():
 
         print("AI 결과:", hazard)
 
+        # 2. AI 결과 받기
+        #final_result = run_ai(frame)
+
+        #if final_result is None:
+        #    hazard = {
+        #        "object": "none",
+        #        "direction": "CENTER",
+        #        "risk": "SAFE",
+        #        "ttc": None
+        #    }
+        #else:
+        #    hazard = final_result
+
+        #print("AI 결과:", hazard)
+
         # 3. BLE 전송 패킷 생성
         packet = encode_hazard(hazard)
 
