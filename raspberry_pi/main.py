@@ -8,95 +8,93 @@
 
 import asyncio
 
-from mock_ai import get_mock_hazard
+from camera import Camera
 from protocol import encode_hazard
 from ble_sender import BLESender
 from latency import now_ms, calc_latency_ms
 from logger import save_log
+from senseon_pipeline import FrameAnalyzer
 
 
 async def main():
     sender = BLESender()
+    analyzer = FrameAnalyzer()
+    camera = Camera()
 
     try:
-        # 1. ESP32 BLE 연결
+        # ESP32 연결
         await sender.connect_with_retry()
 
-        # 2. AI 결과 받기
-        # 현재는 테스트용 Mock AI
-        hazard = get_mock_hazard()
+        # 카메라 시작
+        camera.start()
 
-        print("AI 결과:", hazard)
+        while True:
+            # 1. 프레임 입력
+            frame = camera.get_frame()
 
-        # 2. AI 결과 받기
-        #final_result = run_ai(frame)
+            # 2. AI 처리
+            timestamp = now_ms() / 1000.0
 
-        #if final_result is None:
-        #    hazard = {
-        #        "object": "none",
-        #        "direction": "CENTER",
-        #        "risk": "SAFE",
-        #        "ttc": None
-        #    }
-        #else:
-        #    hazard = final_result
+            final_result, state, annotated_frame = analyzer.process(
+                frame,
+                timestamp
+            )
 
-        #print("AI 결과:", hazard)
+            # 아직 AI가 판단 가능한 상태가 아니면 다음 프레임
+            if state != "READY":
+                print(f"AI 상태: {state}")
+                continue
 
-        # 3. BLE 전송 패킷 생성
-        packet = encode_hazard(hazard)
+            hazard = final_result
 
-        print("전송 패킷:", packet)
+            print("AI 결과:", hazard)
 
-        # 4. 이전 ACK 상태 초기화
-        # 새 패킷의 ACK와 이전 ACK를 구분하기 위함
-        sender.clear_ack()
+            # 3. BLE 패킷 생성
+            packet = encode_hazard(hazard)
 
-        # 5. AI 판단 완료 시점 기록
-        # E2E Latency 측정 시작점
-        ai_result_time = now_ms()
+            print("전송 패킷:", packet)
 
-        # 6. ESP32로 BLE 전송
-        send_success = await sender.send(packet)
+            # 4. 이전 ACK 초기화
+            sender.clear_ack()
 
-        if not send_success:
-            print("BLE 전송 실패")
-            return
+            # 5. AI 판단 완료 시점
+            ai_result_time = now_ms()
 
-        print("BLE 전송 성공")
+            # 6. BLE 전송
+            send_success = await sender.send(packet)
 
-        # 7. ESP32가 모터 ON 후 보내는 ACK 대기
-        ack_received = await sender.wait_for_ack()
+            if not send_success:
+                print("BLE 전송 실패")
+                continue
 
-        if not ack_received:
-            print("ACK 수신 실패")
-            return
+            # 7. ACK 대기
+            ack_received = await sender.wait_for_ack()
 
-        # 8. ACK 수신 시점 기록
-        # E2E Latency 측정 종료점
-        ack_time = now_ms()
+            if not ack_received:
+                print("ACK 수신 실패")
+                continue
 
-        # 9. End-to-End Latency 계산
-        e2e_latency = calc_latency_ms(
-            ai_result_time,
-            ack_time
-        )
+            # 8. E2E latency 계산
+            ack_time = now_ms()
 
-        print(
-            f"End-to-End Latency: "
-            f"{e2e_latency:.3f} ms"
-        )
+            e2e_latency = calc_latency_ms(
+                ai_result_time,
+                ack_time
+            )
 
-        # 10. 로그 저장
-        save_log(
-            hazard,
-            e2e_latency_ms=e2e_latency
-        )
+            print(
+                f"End-to-End Latency: "
+                f"{e2e_latency:.3f} ms"
+            )
 
-        print("로그 저장 완료")
+            # 9. 로그 저장
+            save_log(
+                hazard,
+                e2e_latency_ms=e2e_latency
+            )
 
     finally:
-        # 11. BLE 연결 종료
+        camera.stop()
         await sender.disconnect()
 
 
