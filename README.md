@@ -55,5 +55,7 @@ Camera → Raspberry Pi 5 → BLE → ESP32 → 진동 모터·OLED
 
 ### 동작 영상
 
-https://github.com/user-attachments/assets/951a9bde-6222-44af-9fdb-789d84233279
+
+https://github.com/user-attachments/assets/3a7acea7-0702-435e-b65e-c6ac2bc8bff8
+
 
