@@ -1,6 +1,6 @@
 # SenseOn — Raspberry Pi 기반 후방 충돌위험 감지 시스템
 
-2026 제5회 전공융합 프로젝트 대회(MEIT) | Team SenseOn
+**2026 숙명여자대학교 제5회 전공융합 프로젝트 대회(MEIT) | Team SenseOn**
 
 본 저장소는 팀 프로젝트 중 **Raspberry Pi 5 측 소프트웨어 구현 코드**를 정리한 것입니다.
 
